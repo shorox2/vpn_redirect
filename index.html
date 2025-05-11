@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>VPN Auto-Connect</title>
+    <script>
+        // Функция для извлечения параметра из URL
+        function getUrlParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // Основная логика
+        function setupVpn() {
+            const vlessConfig = getUrlParam('config');
+            if (!vlessConfig) {
+                showError("Конфиг не найден в URL");
+                return;
+            }
+
+            const decodedConfig = decodeURIComponent(vlessConfig);
+            const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+            const isAndroid = /Android/i.test(navigator.userAgent);
+
+            // Пытаемся открыть приложение
+            if (isIOS || isAndroid) {
+                const appUrl = `v2raytun://import/${encodeURIComponent(decodedConfig)}`;
+                window.location.href = appUrl;
+                
+                // Фолбек через 2 секунды
+                setTimeout(() => {
+                    showManualConfig(decodedConfig);
+                }, 2000);
+            } else {
+                showManualConfig(decodedConfig);
+            }
+        }
+
+        // Показать ручную инструкцию
+        function showManualConfig(config) {
+            document.getElementById('auto-connect').style.display = 'none';
+            document.getElementById('manual-config').style.display = 'block';
+            document.getElementById('config-text').value = config;
+            
+            // Генерация QR-кода
+            generateQR(config);
+        }
+
+        // Генерация QR-кода
+        function generateQR(text) {
+            const qrDiv = document.getElementById('qrcode');
+            qrDiv.innerHTML = '';
+            new QRCode(qrDiv, {
+                text: text,
+                width: 200,
+                height: 200,
+                colorDark: "#000000",
+                colorLight: "#ffffff"
+            });
+        }
+
+        // Копирование конфига
+        function copyConfig() {
+            const configText = document.getElementById('config-text');
+            configText.select();
+            document.execCommand('copy');
+            alert('Конфиг скопирован! Вставьте его в V2RayTUN.');
+        }
+
+        // Показать ошибку
+        function showError(message) {
+            document.getElementById('auto-connect').style.display = 'none';
+            document.getElementById('error-message').innerText = message;
+            document.getElementById('error-screen').style.display = 'block';
+        }
+
+        // Запускаем при загрузке
+        window.onload = setupVpn;
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        #auto-connect {
+            margin-top: 50px;
+        }
+        #manual-config, #error-screen {
+            display: none;
+            margin-top: 30px;
+        }
+        #config-text {
+            width: 100%;
+            padding: 10px;
+            margin: 15px 0;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 15px;
+            background: #007AFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #qrcode {
+            margin: 20px auto;
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div id="auto-connect">
+        <h2>Идёт подключение к VPN...</h2>
+        <p>Пожалуйста, подождите, приложение должно открыться автоматически.</p>
+    </div>
+
+    <div id="manual-config">
+        <h2>Автоматическое подключение не сработало</h2>
+        <p>1. Скопируйте этот конфиг:</p>
+        <input type="text" id="config-text" readonly>
+        <button onclick="copyConfig()">Копировать</button>
+        <p>Или отсканируйте QR-код:</p>
+        <div id="qrcode"></div>
+        <p>2. Вставьте конфиг вручную в приложение V2RayTUN.</p>
+    </div>
+
+    <div id="error-screen">
+        <h2>Ошибка</h2>
+        <p id="error-message"></p>
+        <p>Попробуйте запросить новую ссылку у бота.</p>
+    </div>
+
+    <!-- Подключаем библиотеку QR-кода -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+</body>
+</html>
